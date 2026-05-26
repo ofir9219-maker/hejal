@@ -1,0 +1,35 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/hejal
+            git fetch --all
+            git reset --hard origin/main
+            if [ -f package.json ]; then
+              npm ci --omit=dev || npm install --omit=dev
+            fi
+            if pm2 describe hejal > /dev/null 2>&1; then
+              pm2 reload hejal --update-env
+            else
+              pm2 start npm --name hejal -- start
+              pm2 save
+            fi
