@@ -25,9 +25,9 @@ jobs:
             cd /opt/hejal
             git fetch --all
             git reset --hard origin/main
-            npm ci --include=dev
-            npx prisma generate
-            npx prisma migrate deploy
+            npm install --include=dev
+            ./node_modules/.bin/prisma generate
+            ./node_modules/.bin/prisma db push --skip-generate
             npm run build
             if pm2 describe hejal > /dev/null 2>&1; then
               pm2 reload hejal --update-env
