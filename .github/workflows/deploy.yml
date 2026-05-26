@@ -19,14 +19,16 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          command_timeout: 15m
           script: |
             set -e
             cd /opt/hejal
             git fetch --all
             git reset --hard origin/main
-            if [ -f package.json ]; then
-              npm ci --omit=dev || npm install --omit=dev
-            fi
+            npm ci --include=dev
+            npx prisma generate
+            npx prisma migrate deploy
+            npm run build
             if pm2 describe hejal > /dev/null 2>&1; then
               pm2 reload hejal --update-env
             else

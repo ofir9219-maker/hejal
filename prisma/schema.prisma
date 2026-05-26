@@ -1,0 +1,97 @@
+// Prisma schema para Hejal — gestión Kolel
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nombre       String
+  passwordHash String
+  rol          String   @default("admin")
+  creadoEn     DateTime @default(now())
+}
+
+model Donador {
+  id            String         @id @default(cuid())
+  nombre        String
+  contacto      String?
+  montoMensual  Int            @default(0)
+  activo        Boolean        @default(true)
+  notas         String?
+  creadoEn      DateTime       @default(now())
+  mensualidades Mensualidad[]
+  movimientos   Movimiento[]
+
+  @@index([activo])
+}
+
+model Mensualidad {
+  id             String   @id @default(cuid())
+  donadorId      String
+  donador        Donador  @relation(fields: [donadorId], references: [id], onDelete: Cascade)
+  periodo        String   // YYYY-MM
+  montoEsperado  Int
+  montoCobrado   Int      @default(0)
+  estado         String   @default("pendiente") // pendiente | parcial | cobrada
+  fechaCobro     DateTime?
+  metodo         String?
+  notas          String?
+  creadoEn       DateTime @default(now())
+
+  @@unique([donadorId, periodo])
+  @@index([periodo, estado])
+}
+
+model Abrej {
+  id             String          @id @default(cuid())
+  nombre         String
+  contacto       String?
+  nominaMensual  Int             @default(0)
+  activo         Boolean         @default(true)
+  notas          String?
+  creadoEn       DateTime        @default(now())
+  nominas        NominaPagada[]
+  movimientos    Movimiento[]
+
+  @@index([activo])
+}
+
+model NominaPagada {
+  id          String   @id @default(cuid())
+  abrejId     String
+  abrej       Abrej    @relation(fields: [abrejId], references: [id], onDelete: Cascade)
+  periodo     String   // YYYY-MM
+  monto       Int
+  estado      String   @default("pendiente") // pendiente | pagada
+  fechaPago   DateTime?
+  metodo      String?
+  notas       String?
+  creadoEn    DateTime @default(now())
+
+  @@unique([abrejId, periodo])
+  @@index([periodo, estado])
+}
+
+model Movimiento {
+  id           String       @id @default(cuid())
+  fecha        DateTime
+  tipo         String       // ingreso | egreso
+  categoria    String
+  monto        Int
+  descripcion  String?
+  metodo       String?
+  donadorId    String?
+  donador      Donador?     @relation(fields: [donadorId], references: [id])
+  abrejId      String?
+  abrej        Abrej?       @relation(fields: [abrejId], references: [id])
+  creadoEn     DateTime     @default(now())
+
+  @@index([fecha])
+  @@index([tipo, fecha])
+}
